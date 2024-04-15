@@ -52,17 +52,45 @@ By default, Ubuntu uses NetworkManager for network configuration. However, for a
    ```yaml
    network:
      version: 2
+     renderer: networkd
      ethernets:
        enp5s0:
          dhcp4: true
+         dhcp6: true
+         optional: true
+         accept-ra: true
        enp7s0f0:
-         addresses: [192.168.100.1/24]
+         dhcp4: false
+         dhcp6: false
+         optional: true
        enp7s0f1:
-         addresses: [192.168.100.1/24]
+         dhcp4: false
+         dhcp6: false
+         optional: true
        enp7s0f2:
-         addresses: [192.168.100.1/24]
+         dhcp4: false
+         dhcp6: false
+         optional: true
        enp7s0f3:
-         addresses: [192.168.100.1/24]
+         dhcp4: false
+         dhcp6: false
+         optional: true
+     bridges:
+       br_lan: # 将网卡enp1s0和网卡enp2s0组成网桥，网桥名称为br_lan
+         interfaces: # 包含的所有网卡名称
+           - "enp7s0f0"
+           - "enp7s0f1"
+           - "enp7s0f2"
+           - "enp7s0f3"
+         addresses: # 固定网卡所拥有的内网IP地址段
+           - 192.168.100.1/24
+           - fc00:192:168:2::1/64
+         dhcp4: false # 禁用DHCPv4
+         dhcp6: false # 禁用DHCPv6
+         parameters:
+           stp: true # 启用生成树协议，防止环路
+           forward-delay: 4
+         optional: true # 设置为非必须，防止Ubuntu的网络检查造成系统启动延迟
    ```
    Replace the interface names and IP addresses according to your network setup.
 4. Apply the network configuration by running:
@@ -77,10 +105,7 @@ Install and configure the necessary packages for routing and firewall functional
    ```
 2. Configure dnsmasq for DHCP and DNS services. Edit the `/etc/dnsmasq.conf` file and add the following lines:
    ```
-   interface=enp7s0f0
-   interface=enp7s0f1
-   interface=enp7s0f2
-   interface=enp7s0f3
+   interface=br_lan
    dhcp-range=192.168.100.100,192.168.100.200,255.255.255.0,12h
    dhcp-option=3,192.168.100.1
    dhcp-option=6,192.168.100.1
@@ -110,9 +135,11 @@ Install and configure the necessary packages for routing and firewall functional
 4. Enable packet forwarding by uncommenting the following line in the `/etc/sysctl.conf` file:
    ```
    net.ipv4.ip_forward=1
-   net.ipv6.conf.all.disable_ipv6 = 1
-   net.ipv6.conf.default.disable_ipv6 = 1
-   net.ipv6.conf.lo.disable_ipv6 = 1
+   net.ipv4.conf.all.forwarding=1
+   net.ipv4.conf.default.forwarding=1
+   net.ipv4.conf.all.route_localnet=1
+   net.ipv6.conf.all.forwarding=1
+   net.ipv6.conf.default.forwarding=1
    ```
    Apply the changes by running:
    ```
@@ -199,6 +226,16 @@ Verify that your Ubuntu-based router is functioning correctly:
    ```
    sudo iptables -L -n -v
    ```
+
+## v2rayA IPv6
+1. Modify the startup script
+vim /usr/lib/systemd/system/v2raya.service
+2. Add argument --ipv6-support=off
+ExecStart=/usr/bin/v2raya --log-disable-timestamp --ipv6-support=off
+3. Restart service
+systemctl reenable v2raya
+systemctl restart v2raya
+
 ## Advanced Configuration
 Here are some additional configuration options to enhance your Ubuntu-based router:
 - **VPN Server**: Set up a VPN server to securely access your network remotely. You can use OpenVPN or WireGuard for this purpose.
