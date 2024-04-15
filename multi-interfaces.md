@@ -56,13 +56,13 @@ By default, Ubuntu uses NetworkManager for network configuration. However, for a
        enp5s0:
          dhcp4: true
        enp7s0f0:
-         addresses: [192.168.1.1/24]
+         addresses: [192.168.100.1/24]
        enp7s0f1:
-         addresses: [192.168.2.1/24]
+         addresses: [192.168.100.1/24]
        enp7s0f2:
-         addresses: [192.168.3.1/24]
+         addresses: [192.168.100.1/24]
        enp7s0f3:
-         addresses: [192.168.4.1/24]
+         addresses: [192.168.100.1/24]
    ```
    Replace the interface names and IP addresses according to your network setup.
 4. Apply the network configuration by running:
@@ -78,13 +78,16 @@ Install and configure the necessary packages for routing and firewall functional
 2. Configure dnsmasq for DHCP and DNS services. Edit the `/etc/dnsmasq.conf` file and add the following lines:
    ```
    interface=enp7s0f0
-   dhcp-range=192.168.1.100,192.168.1.200,255.255.255.0,12h
    interface=enp7s0f1
-   dhcp-range=192.168.2.100,192.168.2.200,255.255.255.0,12h
    interface=enp7s0f2
-   dhcp-range=192.168.3.100,192.168.3.200,255.255.255.0,12h
    interface=enp7s0f3
-   dhcp-range=192.168.4.100,192.168.4.200,255.255.255.0,12h
+   dhcp-range=192.168.100.100,192.168.100.200,255.255.255.0,12h
+   dhcp-option=3,192.168.100.1
+   dhcp-option=6,192.168.100.1
+   
+   server=8.8.8.8
+   no-resolv
+   no-poll
    ```
    This configures dnsmasq to provide DHCP leases on each LAN interface with the specified IP ranges and lease times.
 3. Configure hostapd for wireless access point functionality (if required). Create a new file `/etc/hostapd/hostapd.conf` and add the following lines:
@@ -107,6 +110,9 @@ Install and configure the necessary packages for routing and firewall functional
 4. Enable packet forwarding by uncommenting the following line in the `/etc/sysctl.conf` file:
    ```
    net.ipv4.ip_forward=1
+   net.ipv6.conf.all.disable_ipv6 = 1
+   net.ipv6.conf.default.disable_ipv6 = 1
+   net.ipv6.conf.lo.disable_ipv6 = 1
    ```
    Apply the changes by running:
    ```
@@ -124,26 +130,21 @@ Set up firewall rules to control network traffic:
    iptables -t nat -X
    iptables -t mangle -F
    iptables -t mangle -X
+   
    # Set default policies
    iptables -P INPUT ACCEPT
    iptables -P FORWARD ACCEPT
    iptables -P OUTPUT ACCEPT
+   
    # Enable NAT
    iptables -t nat -A POSTROUTING -o enp5s0 -j MASQUERADE
-   # Allow established and related connections
-   iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-   # Allow incoming SSH connections
-   iptables -A INPUT -p tcp --dport 22 -j ACCEPT
-   # Allow incoming DNS requests
-   iptables -A INPUT -p udp --dport 53 -j ACCEPT
-   iptables -A INPUT -p tcp --dport 53 -j ACCEPT
-   # Allow incoming DHCP requests
-   iptables -A INPUT -p udp --dport 67:68 -j ACCEPT
-   # Allow incoming HTTP/HTTPS traffic (optional)
-   iptables -A INPUT -p tcp --dport 80 -j ACCEPT
-   iptables -A INPUT -p tcp --dport 443 -j ACCEPT
-   # Drop all other incoming traffic
-   iptables -A INPUT -j DROP
+   
+   # Allow all incoming traffic
+   iptables -A INPUT -j ACCEPT
+   
+   # Allow all forwarded traffic
+   iptables -A FORWARD -j ACCEPT
+   
    # Save the rules
    iptables-save > /etc/iptables.rules
    ```
