@@ -123,6 +123,16 @@ Set up firewall rules to control network traffic:
 1. Create a script to configure the firewall rules. Create a new file `/etc/init.d/firewall` with the following content:
    ```bash
    #!/bin/sh
+   ### BEGIN INIT INFO
+   # Provides:          firewall
+   # Required-Start:    $remote_fs $syslog
+   # Required-Stop:     $remote_fs $syslog
+   # Default-Start:     2 3 4 5
+   # Default-Stop:      0 1 6
+   # Short-Description: Start firewall at boot time
+   # Description:       Enable service provided by firewall.
+   ### END INIT INFO
+
    # Clear existing rules
    iptables -F
    iptables -X
