@@ -145,6 +145,10 @@ Install and configure the necessary packages for routing and firewall functional
    ```
    sudo sysctl -p
    ```
+   or if changes are not applied:
+   ```
+   systemctl restart systemd-sysctl.service
+   ```
 ## Configuring Firewall Rules
 Set up firewall rules to control network traffic:
 1. Create a script to configure the firewall rules. Create a new file `/etc/init.d/firewall` with the following content:
