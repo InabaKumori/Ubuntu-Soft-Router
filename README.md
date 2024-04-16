@@ -173,8 +173,23 @@ Set up firewall rules to control network traffic:
    iptables -P FORWARD ACCEPT
    iptables -P OUTPUT ACCEPT
    
-   # Enable NAT
-   iptables -t nat -A POSTROUTING -o enp5s0 -j MASQUERADE
+   WAN_NAME='enp5s0'
+   
+   # IPv4 setting
+   iptables -t nat -N mt_rtr_4_n_rtr
+   iptables -t nat -A POSTROUTING -j mt_rtr_4_n_rtr
+   iptables -t nat -A mt_rtr_4_n_rtr -o ${WAN_NAME} -j MASQUERADE 
+   
+   # Add IPv4 port forwarding rules
+   iptables -t mangle -N mt_rtr_4_m_rtr
+   iptables -t mangle -A FORWARD -j mt_rtr_4_m_rtr
+   iptables -t mangle -A mt_rtr_4_m_rtr -o ${WAN_NAME} -p tcp -m tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu 
+   iptables -t mangle -A mt_rtr_4_m_rtr -m state --state RELATED,ESTABLISHED -j ACCEPT 
+   iptables -t mangle -A mt_rtr_4_m_rtr -m conntrack --ctstate INVALID -j DROP
+   iptables -t mangle -A mt_rtr_4_m_rtr -p tcp -m tcp ! --tcp-flags FIN,SYN,RST,ACK SYN -m state --state NEW -j DROP
+   iptables -t mangle -A mt_rtr_4_m_rtr -p tcp -m tcp --tcp-flags FIN,SYN,RST,PSH,ACK,URG FIN,SYN,RST,PSH,ACK,URG -j DROP
+   iptables -t mangle -A mt_rtr_4_m_rtr -p tcp -m tcp --tcp-flags FIN,SYN,RST,PSH,ACK,URG NONE -j DROP
+   iptables -t mangle -A mt_rtr_4_m_rtr -i br_lan -o ${WAN_NAME} -j ACCEPT
    
    # Allow all incoming traffic
    iptables -A INPUT -j ACCEPT
@@ -217,6 +232,13 @@ Start the necessary services for the router functionality:
    ```
    sudo reboot
    ```
+
+## Enabling link-tracing module (optional)
+1. Add the following line for the file located in /etc/modules-load.d/modules.conf
+   ```
+   nf_conntrack
+   ```
+2. reboot
 ## Testing and Verification
 Verify that your Ubuntu-based router is functioning correctly:
 1. Connect client devices to each LAN interface or the Wi-Fi network.
