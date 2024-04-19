@@ -106,13 +106,26 @@ Install and configure the necessary packages for routing and firewall functional
 2. Configure dnsmasq for DHCP and DNS services. Edit the `/etc/dnsmasq.conf` file and add the following lines:
    ```
    interface=br_lan
-   dhcp-range=192.168.100.100,192.168.100.200,255.255.255.0,12h
+   dhcp-range=192.168.100.100,192.168.100.200,255.255.255.0,24h
    dhcp-option=3,192.168.100.1
    dhcp-option=6,192.168.100.1
    
-   server=8.8.8.8
+   dhcp-range=fc00:192:168:2::1,fc00:192:168:2::ff,24h
+   dhcp-range=fc00:192:168:2::,slaac
+   dhcp-option=option6:dns-server,[fc00:192:168:2::1]
+   enable-ra
+   dhcp-authoritative
+   
+   cache-size=0
+
+   # Please set the DNS manually and uncomment the following if you have mosdns properly set up.
+   # server=127.0.0.1#5335
+   # Otherwise please uncomment the following line in order to fetch DNS responses
+   # server=8.8.8.8
+   dns-forward-max=10000
    no-resolv
    no-poll
+   port=53
    ```
    This configures dnsmasq to provide DHCP leases on each LAN interface with the specified IP ranges and lease times.
 3. Configure hostapd for wireless access point functionality (if required). Create a new file `/etc/hostapd/hostapd.conf` and add the following lines:
@@ -163,7 +176,7 @@ Set up firewall rules to control network traffic:
    # Short-Description: Start firewall at boot time
    # Description:       Enable service provided by firewall.
    ### END INIT INFO
-
+   
    # Clear existing rules
    iptables -F
    iptables -X
@@ -179,12 +192,10 @@ Set up firewall rules to control network traffic:
    
    WAN_NAME='enp5s0'
    
-   # IPv4 setting
    iptables -t nat -N mt_rtr_4_n_rtr
    iptables -t nat -A POSTROUTING -j mt_rtr_4_n_rtr
    iptables -t nat -A mt_rtr_4_n_rtr -o ${WAN_NAME} -j MASQUERADE 
    
-   # Add IPv4 port forwarding rules
    iptables -t mangle -N mt_rtr_4_m_rtr
    iptables -t mangle -A FORWARD -j mt_rtr_4_m_rtr
    iptables -t mangle -A mt_rtr_4_m_rtr -o ${WAN_NAME} -p tcp -m tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu 
@@ -203,6 +214,42 @@ Set up firewall rules to control network traffic:
    
    # Save the rules
    iptables-save > /etc/iptables.rules
+   
+   # Clear existing rules
+   ip6tables -F
+   ip6tables -X
+   ip6tables -t nat -F
+   ip6tables -t nat -X
+   ip6tables -t mangle -F
+   ip6tables -t mangle -X
+   
+   # Set default policies
+   ip6tables -P INPUT ACCEPT
+   ip6tables -P FORWARD ACCEPT
+   ip6tables -P OUTPUT ACCEPT
+   
+   ip6tables -t nat -N mt_rtr_4_n_rtr
+   ip6tables -t nat -A POSTROUTING -j mt_rtr_4_n_rtr
+   ip6tables -t nat -A mt_rtr_4_n_rtr -o ${WAN_NAME} -j MASQUERADE 
+   
+   ip6tables -t mangle -N mt_rtr_4_m_rtr
+   ip6tables -t mangle -A FORWARD -j mt_rtr_4_m_rtr
+   ip6tables -t mangle -A mt_rtr_4_m_rtr -o ${WAN_NAME} -p tcp -m tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu 
+   ip6tables -t mangle -A mt_rtr_4_m_rtr -m state --state RELATED,ESTABLISHED -j ACCEPT 
+   ip6tables -t mangle -A mt_rtr_4_m_rtr -m conntrack --ctstate INVALID -j DROP
+   ip6tables -t mangle -A mt_rtr_4_m_rtr -p tcp -m tcp ! --tcp-flags FIN,SYN,RST,ACK SYN -m state --state NEW -j DROP
+   ip6tables -t mangle -A mt_rtr_4_m_rtr -p tcp -m tcp --tcp-flags FIN,SYN,RST,PSH,ACK,URG FIN,SYN,RST,PSH,ACK,URG -j DROP
+   ip6tables -t mangle -A mt_rtr_4_m_rtr -p tcp -m tcp --tcp-flags FIN,SYN,RST,PSH,ACK,URG NONE -j DROP
+   ip6tables -t mangle -A mt_rtr_4_m_rtr -i br_lan -o ${WAN_NAME} -j ACCEPT
+   
+   # Allow all incoming traffic
+   ip6tables -A INPUT -j ACCEPT
+   
+   # Allow all forwarded traffic
+   ip6tables -A FORWARD -j ACCEPT
+   
+   # Save the rules
+   ip6tables-save > /etc/ip6tables.rules
    ```
    Make the script executable by running:
    ```
@@ -253,7 +300,7 @@ Verify that your Ubuntu-based router is functioning correctly:
    sudo iptables -L -n -v
    ```
 
-## v2rayA IPv6
+## Disable IPv6 for V2rayA (Optional)
 1. Modify the startup script
 vim /usr/lib/systemd/system/v2raya.service
 2. Add argument --ipv6-support=off
@@ -262,6 +309,29 @@ ExecStart=/usr/bin/v2raya --log-disable-timestamp --ipv6-support=off
 systemctl reenable v2raya
 systemctl restart v2raya
 
+## Bind network interfaces with MAC addresses to their corresponding names, drivers and other settings.
+1. Modifythe following config file with similar styles.
+   ```
+   # Located in /etc/udev/rules.d/custom-devices.rules
+   # Network Interface Card
+   # Format: SUBSYSTEM=="net", ACTION=="add", DRIVERS=="?*", ATTR{address}=="(replace with MAC address)", ATTR{dev_id}=="0x0", ATTR{type}=="1", NAME="(replace with desired interface name)"
+   
+   # Realtek Semiconductor Co., Ltd. RTL8111/8168/8411 PCI Express Gigabit Ethernet Controller
+   SUBSYSTEM=="net", ACTION=="add", DRIVERS=="?*", ATTR{address}=="40:b0:76:42:58:96", ATTR{dev_id}=="0x0", ATTR{type}=="1", NAME="enp5s0"
+   
+   # Broadcom Inc. and subsidiaries NetXtreme BCM5719 Gigabit Ethernet PCIe (Port 1)
+   SUBSYSTEM=="net", ACTION=="add", DRIVERS=="?*", ATTR{address}=="40:a8:f0:25:34:a8", ATTR{dev_id}=="0x0", ATTR{type}=="1", NAME="enp7s0f0"
+   
+   # Broadcom Inc. and subsidiaries NetXtreme BCM5719 Gigabit Ethernet PCIe (Port 2)
+   SUBSYSTEM=="net", ACTION=="add", DRIVERS=="?*", ATTR{address}=="40:a8:f0:25:34:a9", ATTR{dev_id}=="0x0", ATTR{type}=="1", NAME="enp7s0f1"
+   
+   # Broadcom Inc. and subsidiaries NetXtreme BCM5719 Gigabit Ethernet PCIe (Port 3)
+   SUBSYSTEM=="net", ACTION=="add", DRIVERS=="?*", ATTR{address}=="40:a8:f0:25:34:aa", ATTR{dev_id}=="0x0", ATTR{type}=="1", NAME="enp7s0f2"
+   
+   # Broadcom Inc. and subsidiaries NetXtreme BCM5719 Gigabit Ethernet PCIe (Port 4)
+   SUBSYSTEM=="net", ACTION=="add", DRIVERS=="?*", ATTR{address}=="40:a8:f0:25:34:ab", ATTR{dev_id}=="0x0", ATTR{type}=="1", NAME="enp7s0f3"
+   ```
+   
 ## Advanced Configuration
 Here are some additional configuration options to enhance your Ubuntu-based router:
 - **VPN Server**: Set up a VPN server to securely access your network remotely. You can use OpenVPN or WireGuard for this purpose.
