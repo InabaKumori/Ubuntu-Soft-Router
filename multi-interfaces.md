@@ -1,4 +1,5 @@
 # Ubuntu SoftRouter: A Comprehensive Guide
+## (this is now considered obsolete)
 ## Introduction
 Welcome to the Ubuntu SoftRouter repository! This guide aims to provide a detailed walkthrough on setting up an Ubuntu-based router without a GUI, similar to OpenWrt. By following this tutorial, you'll be able to transform your Ubuntu Server into a powerful and customizable router solution.
 ## Table of Contents
