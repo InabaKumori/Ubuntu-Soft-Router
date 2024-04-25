@@ -302,12 +302,18 @@ Verify that your Ubuntu-based router is functioning correctly:
 
 ## Disable IPv6 for V2rayA (Optional)
 1. Modify the startup script
-vim /usr/lib/systemd/system/v2raya.service
+   ```
+   vim /usr/lib/systemd/system/v2raya.service
+   ```
 2. Add argument --ipv6-support=off
-ExecStart=/usr/bin/v2raya --log-disable-timestamp --ipv6-support=off
+   ```
+   ExecStart=/usr/bin/v2raya --log-disable-timestamp --ipv6-support=off
+   ```
 3. Restart service
-systemctl reenable v2raya
-systemctl restart v2raya
+   ```
+   systemctl reenable v2raya
+   systemctl restart v2raya
+   ```
 
 ## Bind network interfaces with MAC addresses to their corresponding names, drivers and other settings.
 1. Modifythe following config file with similar styles.
