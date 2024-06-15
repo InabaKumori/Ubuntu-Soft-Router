@@ -230,7 +230,7 @@ Set up firewall rules to control network traffic:
    
    ip6tables -t nat -N mt_rtr_6_n_rtr
    ip6tables -t nat -A POSTROUTING -j mt_rtr_6_n_rtr
-   ip6tables -t nat -A mt_rtr_6_n_rtr -o ${WAN_NAME} -j MASQUERADE # 添加路由到作为WAN的网卡的自动源地址转换规则
+   ip6tables -t nat -A mt_rtr_6_n_rtr -o ${WAN_NAME} -j MASQUERADE 
    
    ip6tables -t mangle -N mt_rtr_6_m_rtr
    ip6tables -t mangle -A FORWARD -j mt_rtr_6_m_rtr
