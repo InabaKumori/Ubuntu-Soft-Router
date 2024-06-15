@@ -185,11 +185,6 @@ Set up firewall rules to control network traffic:
    iptables -t mangle -F
    iptables -t mangle -X
    
-   # Set default policies
-   iptables -P INPUT ACCEPT
-   iptables -P FORWARD ACCEPT
-   iptables -P OUTPUT ACCEPT
-   
    WAN_NAME='enp5s0'
    
    iptables -t nat -N mt_rtr_4_n_rtr
@@ -206,12 +201,6 @@ Set up firewall rules to control network traffic:
    iptables -t mangle -A mt_rtr_4_m_rtr -p tcp -m tcp --tcp-flags FIN,SYN,RST,PSH,ACK,URG NONE -j DROP
    iptables -t mangle -A mt_rtr_4_m_rtr -i br_lan -o ${WAN_NAME} -j ACCEPT
    
-   # Allow all incoming traffic
-   iptables -A INPUT -j ACCEPT
-   
-   # Allow all forwarded traffic
-   iptables -A FORWARD -j ACCEPT
-   
    # Save the rules
    iptables-save > /etc/iptables.rules
    
@@ -222,11 +211,6 @@ Set up firewall rules to control network traffic:
    ip6tables -t nat -X
    ip6tables -t mangle -F
    ip6tables -t mangle -X
-   
-   # Set default policies
-   ip6tables -P INPUT ACCEPT
-   ip6tables -P FORWARD ACCEPT
-   ip6tables -P OUTPUT ACCEPT
    
    ip6tables -t nat -N mt_rtr_6_n_rtr
    ip6tables -t nat -A POSTROUTING -j mt_rtr_6_n_rtr
@@ -241,12 +225,6 @@ Set up firewall rules to control network traffic:
    ip6tables -t mangle -A mt_rtr_6_m_rtr -p tcp -m tcp --tcp-flags FIN,SYN,RST,PSH,ACK,URG FIN,SYN,RST,PSH,ACK,URG -j DROP
    ip6tables -t mangle -A mt_rtr_6_m_rtr -p tcp -m tcp --tcp-flags FIN,SYN,RST,PSH,ACK,URG NONE -j DROP
    ip6tables -t mangle -A mt_rtr_6_m_rtr -i br_lan -o ${WAN_NAME} -j ACCEPT
-   
-   # Allow all incoming traffic
-   ip6tables -A INPUT -j ACCEPT
-   
-   # Allow all forwarded traffic
-   ip6tables -A FORWARD -j ACCEPT
    
    # Save the rules
    ip6tables-save > /etc/ip6tables.rules
