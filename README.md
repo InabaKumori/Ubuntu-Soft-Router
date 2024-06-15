@@ -228,19 +228,19 @@ Set up firewall rules to control network traffic:
    ip6tables -P FORWARD ACCEPT
    ip6tables -P OUTPUT ACCEPT
    
-   ip6tables -t nat -N mt_rtr_4_n_rtr
-   ip6tables -t nat -A POSTROUTING -j mt_rtr_4_n_rtr
-   ip6tables -t nat -A mt_rtr_4_n_rtr -o ${WAN_NAME} -j MASQUERADE 
+   ip6tables -t nat -N mt_rtr_6_n_rtr
+   ip6tables -t nat -A POSTROUTING -j mt_rtr_6_n_rtr
+   ip6tables -t nat -A mt_rtr_6_n_rtr -o ${WAN_NAME} -j MASQUERADE # 添加路由到作为WAN的网卡的自动源地址转换规则
    
-   ip6tables -t mangle -N mt_rtr_4_m_rtr
-   ip6tables -t mangle -A FORWARD -j mt_rtr_4_m_rtr
-   ip6tables -t mangle -A mt_rtr_4_m_rtr -o ${WAN_NAME} -p tcp -m tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu 
-   ip6tables -t mangle -A mt_rtr_4_m_rtr -m state --state RELATED,ESTABLISHED -j ACCEPT 
-   ip6tables -t mangle -A mt_rtr_4_m_rtr -m conntrack --ctstate INVALID -j DROP
-   ip6tables -t mangle -A mt_rtr_4_m_rtr -p tcp -m tcp ! --tcp-flags FIN,SYN,RST,ACK SYN -m state --state NEW -j DROP
-   ip6tables -t mangle -A mt_rtr_4_m_rtr -p tcp -m tcp --tcp-flags FIN,SYN,RST,PSH,ACK,URG FIN,SYN,RST,PSH,ACK,URG -j DROP
-   ip6tables -t mangle -A mt_rtr_4_m_rtr -p tcp -m tcp --tcp-flags FIN,SYN,RST,PSH,ACK,URG NONE -j DROP
-   ip6tables -t mangle -A mt_rtr_4_m_rtr -i br_lan -o ${WAN_NAME} -j ACCEPT
+   ip6tables -t mangle -N mt_rtr_6_m_rtr
+   ip6tables -t mangle -A FORWARD -j mt_rtr_6_m_rtr
+   ip6tables -t mangle -A mt_rtr_6_m_rtr -o ${WAN_NAME} -p tcp -m tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu
+   ip6tables -t mangle -A mt_rtr_6_m_rtr -m state --state RELATED,ESTABLISHED -j ACCEPT
+   ip6tables -t mangle -A mt_rtr_6_m_rtr -m conntrack --ctstate INVALID -j DROP
+   ip6tables -t mangle -A mt_rtr_6_m_rtr -p tcp -m tcp ! --tcp-flags FIN,SYN,RST,ACK SYN -m state --state NEW -j DROP
+   ip6tables -t mangle -A mt_rtr_6_m_rtr -p tcp -m tcp --tcp-flags FIN,SYN,RST,PSH,ACK,URG FIN,SYN,RST,PSH,ACK,URG -j DROP
+   ip6tables -t mangle -A mt_rtr_6_m_rtr -p tcp -m tcp --tcp-flags FIN,SYN,RST,PSH,ACK,URG NONE -j DROP
+   ip6tables -t mangle -A mt_rtr_6_m_rtr -i br_lan -o ${WAN_NAME} -j ACCEPT
    
    # Allow all incoming traffic
    ip6tables -A INPUT -j ACCEPT
