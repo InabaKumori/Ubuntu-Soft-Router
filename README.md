@@ -187,6 +187,10 @@ Set up firewall rules to control network traffic:
    
    WAN_NAME='enp5s0'
    
+   iptables -A FORWARD -p udp --dport 53 -j ACCEPT
+   iptables -A FORWARD -p udp -f -j DROP
+   iptables -A FORWARD -p udp -m conntrack --ctstate INVALID -j DROP
+   
    iptables -t nat -N mt_rtr_4_n_rtr
    iptables -t nat -A POSTROUTING -j mt_rtr_4_n_rtr
    iptables -t nat -A mt_rtr_4_n_rtr -o ${WAN_NAME} -j MASQUERADE 
@@ -202,7 +206,7 @@ Set up firewall rules to control network traffic:
    iptables -t mangle -A mt_rtr_4_m_rtr -i br_lan -o ${WAN_NAME} -j ACCEPT
    
    # Save the rules
-   iptables-save > /etc/iptables.rules
+   sudo iptables-save > /etc/iptables/rules.v4
    
    # Clear existing rules
    ip6tables -F
@@ -211,6 +215,10 @@ Set up firewall rules to control network traffic:
    ip6tables -t nat -X
    ip6tables -t mangle -F
    ip6tables -t mangle -X
+   
+   ip6tables -A FORWARD -p udp --dport 53 -j ACCEPT
+   ip6tables -A FORWARD -p udp -m frag --fragmore -j DROP
+   ip6tables -A FORWARD -p udp -m conntrack --ctstate INVALID -j DROP
    
    ip6tables -t nat -N mt_rtr_6_n_rtr
    ip6tables -t nat -A POSTROUTING -j mt_rtr_6_n_rtr
@@ -227,7 +235,7 @@ Set up firewall rules to control network traffic:
    ip6tables -t mangle -A mt_rtr_6_m_rtr -i br_lan -o ${WAN_NAME} -j ACCEPT
    
    # Save the rules
-   ip6tables-save > /etc/ip6tables.rules
+   sudo ip6tables-save > /etc/iptables/rules.v6
    ```
    Make the script executable by running:
    ```
