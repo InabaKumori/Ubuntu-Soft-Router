@@ -120,8 +120,10 @@ Install and configure the necessary packages for routing and firewall functional
 
    # Please set the DNS manually and uncomment the following if you have mosdns properly set up.
    # server=127.0.0.1#5335
-   # Otherwise please uncomment the following line in order to fetch DNS responses
-   # server=8.8.8.8
+
+   server=8.8.8.8
+   server=2001:4860:4860::8888
+   
    dns-forward-max=10000
    no-resolv
    no-poll
