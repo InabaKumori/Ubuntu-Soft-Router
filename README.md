@@ -124,10 +124,17 @@ Install and configure the necessary packages for routing and firewall functional
    server=8.8.8.8
    server=2001:4860:4860::8888
    
-   dns-forward-max=10000
+   dns-forward-max=10000000
    no-resolv
    no-poll
    port=53
+
+   bogus-priv  # Block reverse lookups for private IP ranges
+   filterwin2k # Filter unnecessary NetBIOS requests
+
+   interface=enp5s0
+   no-dhcp-interface=enp5s0
+   bind-interfaces
    ```
    This configures dnsmasq to provide DHCP leases on each LAN interface with the specified IP ranges and lease times.
 3. Configure hostapd for wireless access point functionality (if required). Create a new file `/etc/hostapd/hostapd.conf` and add the following lines:
